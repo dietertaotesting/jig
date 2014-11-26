@@ -29,6 +29,20 @@ class StringUtils
         return !ctype_print($string);
     }
 
+    /**
+     * Remove the byte order mark from a string if applicable
+     *
+     * @param string $string
+     * @return string
+     */
+    public static function removeBom($string)
+    {
+        if (substr($string, 0, 3) == pack('CCC', 0xef, 0xbb, 0xbf)) {
+            $string = substr($string, 3);
+        }
+        return $string;
+    }
+
 
     /**
      * In French orthography some marks are preceded by a space which can lead to unwanted line breaks
@@ -44,16 +58,16 @@ class StringUtils
     }
 
     /**
-     * This function removes all special characters from a string. They are replaced by $repl,
-     * multiple $repl are replaced by just one, $repl is also trimmed from the beginning and the end
-     * of the string.
+     * This function removes all special characters from a string. They are replaced by $replacement,
+     * multiple $replacement are replaced by just one, $replacement is also trimmed from the beginning
+     * and the end of the string.
      *
      * @param string $string the original text
-     * @param string $repl the replacement, - by default
+     * @param string $replacement the replacement, - by default
      * @param bool $lower return string in lower case, true by default
      * @return string $string the modified string
      */
-    public static function removeSpecChars($string, $repl = '-', $lower = true)
+    public static function removeSpecChars($string, $replacement = '-', $lower = true)
     {
         $specChars = array(
             'Á' => 'A',
@@ -117,10 +131,10 @@ class StringUtils
             'ý' => 'y',
             'þ' => 't',
             'ÿ' => 'y',
-            '_' => $repl
+            '_' => $replacement
         );
         $string    = strtr($string, $specChars);
-        $string    = trim(preg_replace('~\W+~u', $repl, $string), $repl);
+        $string    = trim(preg_replace('~\W+~u', $replacement, $string), $replacement);
         return $lower ? strtolower($string) : $string;
     }
 
@@ -151,6 +165,46 @@ class StringUtils
         return strtolower(preg_replace('/(?<=\\w)([A-Z])/', '_\\1', $camelCasedWord));
     }
 
+
+    /**
+     * Quote a value (mainly for usage in CSV)
+     *
+     * @param string $value
+     * @param array $options
+     * @return string
+     */
+    public static function csvQuote($value, array $options = array())
+    {
+        $options = array_merge(
+            [
+                'enclosure' => '"',
+                'escape'    => '\\'
+            ],
+            $options
+        );
+        if (!is_numeric($value) && !is_bool($value) && !is_null($value) && !in_array(
+                strtolower($value),
+                ['true', 'false', 'null']
+            )
+        ) {
+            $value = str_replace($options['enclosure'], $options['escape'] . $options['enclosure'], $value);
+            return $options['enclosure'] . $value . $options['enclosure'];
+        }
+        switch (true) {
+            case is_null($value):
+                return 'null';
+
+            case false === $value:
+                return 'false';
+
+            case true === $value:
+                return 'true';
+
+            default:
+                return $value;
+        }
+
+    }
 
     /**
      * Encodes text randomly to html entities of different styles

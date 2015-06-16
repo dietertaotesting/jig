@@ -176,15 +176,15 @@ class StringUtils
     public static function csvQuote($value, array $options = array())
     {
         $options = array_merge(
-            [
+            array(
                 'enclosure' => '"',
                 'escape'    => '\\'
-            ],
+            ),
             $options
         );
         if (!is_numeric($value) && !is_bool($value) && !is_null($value) && !in_array(
                 strtolower($value),
-                ['true', 'false', 'null']
+                array( 'true', 'false', 'null' )
             )
         ) {
             $value = str_replace($options['enclosure'], $options['escape'] . $options['enclosure'], $value);
@@ -231,6 +231,47 @@ class StringUtils
             }
         }
         return $encoded_text;
+    }
+
+    /**
+     * Split long parts of the string to equal length chunks, multibyte safe
+     *
+     * @param $input string to be processed
+     * @param string $threshold
+     * @param string $glue
+     *
+     * @return string
+     */
+    static public function wrapLongWords( $input, $threshold = '20', $glue = ' ' )
+    {
+        $tokens = explode( $glue, $input );
+        $result = array();
+
+        foreach ($tokens as $str) {
+            $mblen = mb_strlen( $str );
+            if ($mblen < $threshold) {
+                $result[] = $str;
+                continue;
+            }
+            $array = array();
+            for ($i = 0; $i < $mblen; $i ++) {
+                $array[] = mb_substr( $str, $i, 1 );
+            }
+            $n   = 0;
+            $new = '';
+            foreach ($array as $char) {
+                if ($n <= $threshold) {
+                    $new .= $char;
+                } else {
+                    $result[] = $new;
+                    $new      = '';
+                    $n        = 0;
+                }
+                $n ++;
+            }
+        }
+
+        return implode( $glue, $result );
     }
 
 }

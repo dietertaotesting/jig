@@ -1008,9 +1008,9 @@ class FsUtils
         return self::$mimeList;
     }
 
-    public static function getMimeTypeByExtension($extension)
+    public static function getMimeTypeByExtension($extension, $assumedFileMime = 'application/octet-stream')
     {
-        return !empty(self::$mimeList[$extension]) ? self::$mimeList[$extension] : 'application/octet-stream';
+        return !empty(self::$mimeList[$extension]) ? self::$mimeList[$extension] : $assumedFileMime;
     }
 
 
@@ -1052,6 +1052,29 @@ class FsUtils
     }
 
     /**
+     * Recursively removes directory
+     *
+     * @param string $directory
+     */
+    public static function rmDir( $directory )
+    {
+        if (is_dir( $directory )) {
+            $objects = scandir( $directory );
+            foreach ($objects as $object) {
+                if ($object !== '.' && $object !== '..') {
+                    if (filetype( $directory . DIRECTORY_SEPARATOR . $object ) === 'dir') {
+                        self::rmDir( $directory . DIRECTORY_SEPARATOR . $object );
+                    } else {
+                        unlink( $directory . DIRECTORY_SEPARATOR . $object );
+                    }
+                }
+            }
+            reset( $objects );
+            rmdir( $directory );
+        }
+    }
+
+    /**
      * Get mime info based on finfo but with the possibility to extend to specific types
      *
      * @param string $filePath
@@ -1065,8 +1088,8 @@ class FsUtils
 
 
         //Result is often too generic, see if we can find out more
-        if (!$fileMime || $fileMime === 'application/octet-stream') {
-            return self::getMimeTypeByExtension(self::getFileExtension($filePath));
+        if (!$fileMime || $fileMime === 'application/octet-stream' || $fileMime === 'text/plain') {
+            return self::getMimeTypeByExtension(self::getFileExtension($filePath), $fileMime);
         }
 
         return $fileMime;
